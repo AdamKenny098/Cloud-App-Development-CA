@@ -9,3 +9,4 @@ cdk.out
 
 # JSON files
 response.json
+*.schema.json
