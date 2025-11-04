@@ -66,7 +66,23 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
             REGION: cdk.Aws.REGION,
           },
         }
-        );
+      );
+
+      const deleteMovieByIdFn = new lambdanode.NodejsFunction(
+        this,
+        "DeleteMovieByIdFn",
+        {
+          architecture: lambda.Architecture.ARM_64,
+          runtime: lambda.Runtime.NODEJS_18_X,
+          entry: `${__dirname}/../lambdas/deleteMovieById.ts`,
+          timeout: cdk.Duration.seconds(10),
+          memorySize: 128,
+          environment: {
+            TABLE_NAME: moviesTable.tableName,
+            REGION: cdk.Aws.REGION,
+          },
+        }
+      );
         
         new custom.AwsCustomResource(this, "moviesddbInitData", {
           onCreate: {
@@ -88,6 +104,7 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
         moviesTable.grantReadData(getMovieByIdFn)
         moviesTable.grantReadData(getAllMoviesFn)
         moviesTable.grantReadWriteData(newMovieFn)
+        moviesTable.grantReadWriteData(deleteMovieByIdFn)
 
         //Rest API
         const api = new apig.RestApi(this, "RestAPI", {
@@ -118,6 +135,11 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
         movieEndpoint.addMethod(
           "GET",
           new apig.LambdaIntegration(getMovieByIdFn, { proxy: true })
+        );
+
+        moviesEndpoint.addMethod(
+          "DELETE",
+          new apig.LambdaIntegration(deleteMovieByIdFn, { proxy: true })
         );
 
 
