@@ -6,7 +6,7 @@ import * as custom from "aws-cdk-lib/custom-resources";
 import { Construct } from "constructs";
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { generateBatch } from "../shared/util";
-import { movies, movieCasts } from "../seed/movies";
+import { movies, casts, actors, awards } from "../seed/movies";
 import * as apig from "aws-cdk-lib/aws-apigateway";
 
 
@@ -14,26 +14,30 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // Tables 
-    const moviesTable = new dynamodb.Table(this, "MoviesTable", {
+    const entityTable = new dynamodb.Table(this, "EntityTable", {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      partitionKey: { name: "id", type: dynamodb.AttributeType.NUMBER },
+      partitionKey: { name: "PK", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "SK", type: dynamodb.AttributeType.STRING },
       removalPolicy: cdk.RemovalPolicy.DESTROY,
-      tableName: "Movies",
     });
 
-        const movieCastsTable = new dynamodb.Table(this, "MovieCastTable", {
-      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      partitionKey: { name: "movieId", type: dynamodb.AttributeType.NUMBER },
-      sortKey: { name: "actorName", type: dynamodb.AttributeType.STRING },
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-      tableName: "MovieCast",
- });
+    new custom.AwsCustomResource(this, "EntityTableInitData", {
+      onCreate: {
+        service: "DynamoDB",
+        action: "batchWriteItem",
+        parameters: {
+          RequestItems: {
+            [entityTable.tableName]: generateBatch([...movies, ...actors, ...casts, ...awards]),
+          },
+        },
+        physicalResourceId: custom.PhysicalResourceId.of("EntityTableInitData"),
+      },
+      policy: custom.AwsCustomResourcePolicy.fromSdkCalls({
+        resources: [entityTable.tableArn],
+      }),
+    });
 
-    movieCastsTable.addLocalSecondaryIndex({
-      indexName: "roleIx",
-      sortKey: { name: "roleName", type: dynamodb.AttributeType.STRING },
- });
+
 
 
     
@@ -45,7 +49,7 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
             timeout: cdk.Duration.seconds(10),
             memorySize: 128,
             environment: {
-              TABLE_NAME: moviesTable.tableName,
+              TABLE_NAME: entityTable.tableName,
               REGION: cdk.Aws.REGION,
             },
           });
@@ -60,7 +64,7 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
         timeout: cdk.Duration.seconds(10),
         memorySize: 128,
         environment: {
-          TABLE_NAME: moviesTable.tableName,
+          TABLE_NAME: entityTable.tableName,
           REGION: cdk.Aws.REGION,
         },
       }
@@ -76,7 +80,7 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
           timeout: cdk.Duration.seconds(10),
           memorySize: 128,
           environment: {
-            TABLE_NAME: moviesTable.tableName,
+            TABLE_NAME: entityTable.tableName,
             REGION: cdk.Aws.REGION,
           },
         }
@@ -92,31 +96,13 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
           timeout: cdk.Duration.seconds(10),
           memorySize: 128,
           environment: {
-            TABLE_NAME: moviesTable.tableName,
+            TABLE_NAME: entityTable.tableName,
             REGION: cdk.Aws.REGION,
           },
         }
       );
-        
-            new custom.AwsCustomResource(this, "moviesddbInitData", {
-      onCreate: {
-        service: "DynamoDB",
-        action: "batchWriteItem",
-        parameters: {
-          RequestItems: {
-            [moviesTable.tableName]: generateBatch(movies),
-            [movieCastsTable.tableName]: generateBatch(movieCasts),  // Added
- },
- },
-        physicalResourceId: custom.PhysicalResourceId.of("moviesddbInitData"), //.of(Date.now().toString()),
- },
-      policy: custom.AwsCustomResourcePolicy.fromSdkCalls({
-        resources: [moviesTable.tableArn, movieCastsTable.tableArn],  // Includes movie cast
- }),
- });
 
 
-        //  Functions .....
     const getMovieCastMembersFn = new lambdanode.NodejsFunction(
       this,
       "GetCastMemberFn",
@@ -127,18 +113,35 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
         timeout: cdk.Duration.seconds(10),
         memorySize: 128,
         environment: {
-          TABLE_NAME: movieCastsTable.tableName,
+          TABLE_NAME: entityTable.tableName,
           REGION: cdk.Aws.REGION,
         },
       }
  );
+
+  const getActorByMovieFn = new lambdanode.NodejsFunction(
+        this,
+        "GetActorByMovieFn",
+        {
+          architecture: lambda.Architecture.ARM_64,
+          runtime: lambda.Runtime.NODEJS_18_X,
+          entry: `${__dirname}/../lambdas/getActorByMovie.ts`,
+          timeout: cdk.Duration.seconds(10),
+          memorySize: 128,
+          environment: {
+            TABLE_NAME: entityTable.tableName,
+            REGION: cdk.Aws.REGION,
+          },
+        }
+      );
         
         // Permissions 
-        moviesTable.grantReadData(getMovieByIdFn)
-        moviesTable.grantReadData(getAllMoviesFn)
-        moviesTable.grantReadWriteData(newMovieFn)
-        moviesTable.grantReadWriteData(deleteMovieByIdFn)
-        movieCastsTable.grantReadData(getMovieCastMembersFn);
+        entityTable.grantReadData(getMovieByIdFn)
+        entityTable.grantReadData(getAllMoviesFn)
+        entityTable.grantReadWriteData(newMovieFn)
+        entityTable.grantReadWriteData(deleteMovieByIdFn)
+        entityTable.grantReadData(getMovieCastMembersFn);
+        entityTable.grantReadData(getActorByMovieFn)
 
         //Rest API
         const api = new apig.RestApi(this, "RestAPI", {
@@ -180,6 +183,12 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
         movieCastEndpoint.addMethod(
           "GET",
           new apig.LambdaIntegration(getMovieCastMembersFn, { proxy: true })
+        );
+
+        const movieActorsEndpoint = moviesEndpoint.addResource("actors");
+        movieActorsEndpoint.addMethod(
+          "GET",
+          new apig.LambdaIntegration(getActorByMovieFn, { proxy: true })
         );
             
             

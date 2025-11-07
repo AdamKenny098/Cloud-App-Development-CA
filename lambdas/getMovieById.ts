@@ -1,5 +1,4 @@
 import { Handler } from "aws-lambda";
-
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
 
@@ -9,15 +8,12 @@ export const handler: Handler = async (event, context) => {
   try {
     // Print Event
     console.log("Event: ", JSON.stringify(event?.queryStringParameters));
-    const parameters = event?.queryStringParameters;
-    const movieId = parameters ? parseInt(parameters.movieId) : undefined;
+    const movieId = event?.pathParameters?.movieId;
 
     if (!movieId) {
       return {
         statusCode: 404,
-        headers: {
-          "content-type": "application/json",
-        },
+        headers: {"content-type": "application/json",},
         body: JSON.stringify({ Message: "Missing movie Id" }),
       };
     }
@@ -25,7 +21,7 @@ export const handler: Handler = async (event, context) => {
     const commandOutput = await ddbDocClient.send(
       new GetCommand({
         TableName: process.env.TABLE_NAME,
-        Key: { id: movieId },
+        Key: { PK: `m${movieId}`, SK: "xxxx"},
       })
     );
     console.log("GetCommand response: ", commandOutput);
