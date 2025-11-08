@@ -173,11 +173,11 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
           "GET",
           new apig.LambdaIntegration(getMovieByIdFn, { proxy: true })
         );
-
-        moviesEndpoint.addMethod(
+        movieEndpoint.addMethod(
           "DELETE",
           new apig.LambdaIntegration(deleteMovieByIdFn, { proxy: true })
         );
+
 
         const movieCastEndpoint = moviesEndpoint.addResource("cast");
         movieCastEndpoint.addMethod(

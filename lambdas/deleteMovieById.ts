@@ -8,8 +8,9 @@ export const handler: Handler = async (event, context) => {
   try {
     // Print Event
     console.log("Event: ", JSON.stringify(event?.queryStringParameters));
-    const parameters = event?.queryStringParameters;
-    const movieId = parameters ? parseInt(parameters.movieId) : undefined;
+    
+    const movieId = event.pathParameters?.movieId;
+
 
     if (!movieId) {
       return {
@@ -24,7 +25,7 @@ export const handler: Handler = async (event, context) => {
     const commandOutput = await ddbDocClient.send(
       new DeleteCommand({
         TableName: process.env.TABLE_NAME,
-        Key: { id: movieId },
+        Key: { PK: `m${movieId}`, SK: "xxxx" },
       })
     );
     console.log("DeleteCommand response: ", commandOutput);
