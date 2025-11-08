@@ -37,21 +37,22 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
       };
     }
     // Unchanged
-    const commandOutput = await ddbDocClient.send(
-      new PutCommand({
-        TableName: process.env.TABLE_NAME,
-        Item: body,
-      })
-    );
+    
+    const item = {
+      ...body,
+      PK: `m${body.id}`,
+      SK: "metadata",
+    };
+
+    await ddbDocClient.send(new PutCommand({TableName:process.env.TABLE_NAME, Item: item,}));
+
     return {
       statusCode: 201,
-      headers: {
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({ message: "Movie added" }),
+      headers:{"content-type": "application/json",},
+      body: JSON.stringify({message: "Movie added successfully",movieId: body.id,}),
     };
+
   } catch (error: any) {
-    console.log(JSON.stringify(error));
     return {
       statusCode: 500,
       headers: {
