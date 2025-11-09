@@ -119,21 +119,38 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
       }
  );
 
-  const getActorByMovieFn = new lambdanode.NodejsFunction(
-        this,
-        "GetActorByMovieFn",
-        {
-          architecture: lambda.Architecture.ARM_64,
-          runtime: lambda.Runtime.NODEJS_18_X,
-          entry: `${__dirname}/../lambdas/getActorByMovie.ts`,
-          timeout: cdk.Duration.seconds(10),
-          memorySize: 128,
-          environment: {
-            TABLE_NAME: entityTable.tableName,
-            REGION: cdk.Aws.REGION,
-          },
-        }
-      );
+          const getActorByMovieFn = new lambdanode.NodejsFunction(
+                this,
+                "GetActorByMovieFn",
+                {
+                  architecture: lambda.Architecture.ARM_64,
+                  runtime: lambda.Runtime.NODEJS_18_X,
+                  entry: `${__dirname}/../lambdas/getActorByMovie.ts`,
+                  timeout: cdk.Duration.seconds(10),
+                  memorySize: 128,
+                  environment: {
+                    TABLE_NAME: entityTable.tableName,
+                    REGION: cdk.Aws.REGION,
+                  },
+                }
+              );
+
+          const getCastMemberByIdFn = new lambdanode.NodejsFunction(
+          this,
+          "GetCastMemberByIdFn",
+          {
+            architecture: lambda.Architecture.ARM_64,
+            runtime: lambda.Runtime.NODEJS_18_X,
+            entry: `${__dirname}/../lambdas/getActorById.ts`,
+            timeout: cdk.Duration.seconds(10),
+            memorySize: 128,
+            environment: {
+              TABLE_NAME: entityTable.tableName,
+              REGION: cdk.Aws.REGION,
+            },
+          }
+        );
+
         
         // Permissions 
         entityTable.grantReadData(getMovieByIdFn)
@@ -142,6 +159,7 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
         entityTable.grantReadWriteData(deleteMovieByIdFn)
         entityTable.grantReadData(getMovieCastMembersFn);
         entityTable.grantReadData(getActorByMovieFn)
+        entityTable.grantReadData(getCastMemberByIdFn);
 
         //Rest API
         const api = new apig.RestApi(this, "RestAPI", {
@@ -185,13 +203,18 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
           new apig.LambdaIntegration(getMovieCastMembersFn, { proxy: true })
         );
 
-        const movieActorsEndpoint = moviesEndpoint.addResource("actors");
+        const movieActorsEndpoint = movieEndpoint.addResource("actors");
         movieActorsEndpoint.addMethod(
           "GET",
           new apig.LambdaIntegration(getActorByMovieFn, { proxy: true })
         );
-            
-            
-          }
-        }
+
+        const specificActorEndpoint = movieActorsEndpoint.addResource("{actorId}");
+        specificActorEndpoint.addMethod(
+          "GET",
+          new apig.LambdaIntegration(getCastMemberByIdFn, { proxy: true })
+        );
+
+      }
+}
         

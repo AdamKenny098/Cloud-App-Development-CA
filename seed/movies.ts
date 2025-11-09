@@ -86,19 +86,19 @@ export const casts: Cast[] = [
 
 export const awards: Award[] = [
   {
-    PK: "w1001",
+    PK: "w848326",
     SK: "Academy",
     awardId: 1001,
     body: "Academy",
     category: "Best Actor",
-    year: 2024,
+   year: 2024,
   },
   {
-    PK: "w1002",
-    SK: "BAFTA",
+    PK: "w1",
+    SK: "GoldenGlobe",
     awardId: 1002,
     body: "BAFTA",
     category: "Best Picture",
-    year: 2024,
+   year: 2024,
   },
 ];
