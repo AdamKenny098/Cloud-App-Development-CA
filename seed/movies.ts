@@ -91,7 +91,7 @@ export const awards: Award[] = [
     awardId: 1001,
     body: "Academy",
     category: "Best Actor",
-   year: 2024,
+    year: 2024,
   },
   {
     PK: "w1",
@@ -99,6 +99,6 @@ export const awards: Award[] = [
     awardId: 1002,
     body: "BAFTA",
     category: "Best Picture",
-   year: 2024,
+    year: 2024,
   },
 ];

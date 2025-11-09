@@ -25,7 +25,7 @@ export const handler: Handler = async (event) => {
         ExpressionAttributeValues: {
           ":pk": `c${movieId}`,
         },
-      })
+      }),
     );
 
     return {

@@ -26,7 +26,7 @@ export const handler: Handler = async (event) => {
           PK: `c${movieId}`,
           SK: actorId,
         },
-      })
+      }),
     );
 
     console.log("GetCommand response: ", commandOutput);

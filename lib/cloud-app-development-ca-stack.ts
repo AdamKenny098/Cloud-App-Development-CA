@@ -4,11 +4,10 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as custom from "aws-cdk-lib/custom-resources";
 import { Construct } from "constructs";
-import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as sqs from "aws-cdk-lib/aws-sqs";
 import { generateBatch } from "../shared/util";
 import { movies, casts, actors, awards } from "../seed/movies";
 import * as apig from "aws-cdk-lib/aws-apigateway";
-
 
 export class CloudAppDevelopmentCaStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -27,7 +26,12 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
         action: "batchWriteItem",
         parameters: {
           RequestItems: {
-            [entityTable.tableName]: generateBatch([...movies, ...actors, ...casts, ...awards]),
+            [entityTable.tableName]: generateBatch([
+              ...movies,
+              ...actors,
+              ...casts,
+              ...awards,
+            ]),
           },
         },
         physicalResourceId: custom.PhysicalResourceId.of("EntityTableInitData"),
@@ -37,22 +41,18 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
       }),
     });
 
-
-
-
-    
     // Functions
-        const newMovieFn = new lambdanode.NodejsFunction(this, "AddMovieFn", {
-            architecture: lambda.Architecture.ARM_64,
-            runtime: lambda.Runtime.NODEJS_16_X,
-            entry: `${__dirname}/../lambdas/addMovie.ts`,
-            timeout: cdk.Duration.seconds(10),
-            memorySize: 128,
-            environment: {
-              TABLE_NAME: entityTable.tableName,
-              REGION: cdk.Aws.REGION,
-            },
-          });
+    const newMovieFn = new lambdanode.NodejsFunction(this, "AddMovieFn", {
+      architecture: lambda.Architecture.ARM_64,
+      runtime: lambda.Runtime.NODEJS_16_X,
+      entry: `${__dirname}/../lambdas/addMovie.ts`,
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 128,
+      environment: {
+        TABLE_NAME: entityTable.tableName,
+        REGION: cdk.Aws.REGION,
+      },
+    });
 
     const getMovieByIdFn = new lambdanode.NodejsFunction(
       this,
@@ -67,41 +67,40 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
           TABLE_NAME: entityTable.tableName,
           REGION: cdk.Aws.REGION,
         },
-      }
-      );
-      
-      const getAllMoviesFn = new lambdanode.NodejsFunction(
-        this,
-        "GetAllMoviesFn",
-        {
-          architecture: lambda.Architecture.ARM_64,
-          runtime: lambda.Runtime.NODEJS_18_X,
-          entry: `${__dirname}/../lambdas/getAllMovies.ts`,
-          timeout: cdk.Duration.seconds(10),
-          memorySize: 128,
-          environment: {
-            TABLE_NAME: entityTable.tableName,
-            REGION: cdk.Aws.REGION,
-          },
-        }
-      );
+      },
+    );
 
-      const deleteMovieByIdFn = new lambdanode.NodejsFunction(
-        this,
-        "DeleteMovieByIdFn",
-        {
-          architecture: lambda.Architecture.ARM_64,
-          runtime: lambda.Runtime.NODEJS_18_X,
-          entry: `${__dirname}/../lambdas/deleteMovieById.ts`,
-          timeout: cdk.Duration.seconds(10),
-          memorySize: 128,
-          environment: {
-            TABLE_NAME: entityTable.tableName,
-            REGION: cdk.Aws.REGION,
-          },
-        }
-      );
+    const getAllMoviesFn = new lambdanode.NodejsFunction(
+      this,
+      "GetAllMoviesFn",
+      {
+        architecture: lambda.Architecture.ARM_64,
+        runtime: lambda.Runtime.NODEJS_18_X,
+        entry: `${__dirname}/../lambdas/getAllMovies.ts`,
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 128,
+        environment: {
+          TABLE_NAME: entityTable.tableName,
+          REGION: cdk.Aws.REGION,
+        },
+      },
+    );
 
+    const deleteMovieByIdFn = new lambdanode.NodejsFunction(
+      this,
+      "DeleteMovieByIdFn",
+      {
+        architecture: lambda.Architecture.ARM_64,
+        runtime: lambda.Runtime.NODEJS_18_X,
+        entry: `${__dirname}/../lambdas/deleteMovieById.ts`,
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 128,
+        environment: {
+          TABLE_NAME: entityTable.tableName,
+          REGION: cdk.Aws.REGION,
+        },
+      },
+    );
 
     const getMovieCastMembersFn = new lambdanode.NodejsFunction(
       this,
@@ -116,128 +115,120 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
           TABLE_NAME: entityTable.tableName,
           REGION: cdk.Aws.REGION,
         },
-      }
- );
+      },
+    );
 
-          const getActorByMovieFn = new lambdanode.NodejsFunction(
-                this,
-                "GetActorByMovieFn",
-                {
-                  architecture: lambda.Architecture.ARM_64,
-                  runtime: lambda.Runtime.NODEJS_18_X,
-                  entry: `${__dirname}/../lambdas/getActorByMovie.ts`,
-                  timeout: cdk.Duration.seconds(10),
-                  memorySize: 128,
-                  environment: {
-                    TABLE_NAME: entityTable.tableName,
-                    REGION: cdk.Aws.REGION,
-                  },
-                }
-              );
+    const getActorByMovieFn = new lambdanode.NodejsFunction(
+      this,
+      "GetActorByMovieFn",
+      {
+        architecture: lambda.Architecture.ARM_64,
+        runtime: lambda.Runtime.NODEJS_18_X,
+        entry: `${__dirname}/../lambdas/getActorByMovie.ts`,
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 128,
+        environment: {
+          TABLE_NAME: entityTable.tableName,
+          REGION: cdk.Aws.REGION,
+        },
+      },
+    );
 
-          const getCastMemberByIdFn = new lambdanode.NodejsFunction(
-          this,
-          "GetCastMemberByIdFn",
-          {
-            architecture: lambda.Architecture.ARM_64,
-            runtime: lambda.Runtime.NODEJS_18_X,
-            entry: `${__dirname}/../lambdas/getActorById.ts`,
-            timeout: cdk.Duration.seconds(10),
-            memorySize: 128,
-            environment: {
-              TABLE_NAME: entityTable.tableName,
-              REGION: cdk.Aws.REGION,
-            },
-          }
-        );
+    const getCastMemberByIdFn = new lambdanode.NodejsFunction(
+      this,
+      "GetCastMemberByIdFn",
+      {
+        architecture: lambda.Architecture.ARM_64,
+        runtime: lambda.Runtime.NODEJS_18_X,
+        entry: `${__dirname}/../lambdas/getActorById.ts`,
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 128,
+        environment: {
+          TABLE_NAME: entityTable.tableName,
+          REGION: cdk.Aws.REGION,
+        },
+      },
+    );
 
-        // GET /awards
-        const getAwardsFn = new lambdanode.NodejsFunction(this, "GetAwardsFn", {
-          architecture: lambda.Architecture.ARM_64,
-          runtime: lambda.Runtime.NODEJS_18_X,
-          entry: `${__dirname}/../lambdas/getAwards.ts`,
-          timeout: cdk.Duration.seconds(10),
-          memorySize: 128,
-          environment: {
-            TABLE_NAME: entityTable.tableName,
-            REGION: cdk.Aws.REGION,
-          },
-        });
+    const getAwardsFn = new lambdanode.NodejsFunction(this, "GetAwardsFn", {
+      architecture: lambda.Architecture.ARM_64,
+      runtime: lambda.Runtime.NODEJS_18_X,
+      entry: `${__dirname}/../lambdas/getAwards.ts`,
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 128,
+      environment: {
+        TABLE_NAME: entityTable.tableName,
+        REGION: cdk.Aws.REGION,
+      },
+    });
 
+    // Permissions
+    entityTable.grantReadData(getMovieByIdFn);
+    entityTable.grantReadData(getAllMoviesFn);
+    entityTable.grantReadWriteData(newMovieFn);
+    entityTable.grantReadWriteData(deleteMovieByIdFn);
+    entityTable.grantReadData(getMovieCastMembersFn);
+    entityTable.grantReadData(getActorByMovieFn);
+    entityTable.grantReadData(getCastMemberByIdFn);
+    entityTable.grantReadData(getAwardsFn);
 
-        
-        // Permissions 
-        entityTable.grantReadData(getMovieByIdFn)
-        entityTable.grantReadData(getAllMoviesFn)
-        entityTable.grantReadWriteData(newMovieFn)
-        entityTable.grantReadWriteData(deleteMovieByIdFn)
-        entityTable.grantReadData(getMovieCastMembersFn);
-        entityTable.grantReadData(getActorByMovieFn)
-        entityTable.grantReadData(getCastMemberByIdFn);
-        entityTable.grantReadData(getAwardsFn);
+    //Rest API
+    const api = new apig.RestApi(this, "RestAPI", {
+      description: "demo api",
+      deployOptions: {
+        stageName: "dev",
+      },
+      defaultCorsPreflightOptions: {
+        allowHeaders: ["Content-Type", "X-Amz-Date"],
+        allowMethods: ["OPTIONS", "GET", "POST", "PUT", "PATCH", "DELETE"],
+        allowCredentials: true,
+        allowOrigins: ["*"],
+      },
+    });
 
+    const moviesEndpoint = api.root.addResource("movies");
+    moviesEndpoint.addMethod(
+      "GET",
+      new apig.LambdaIntegration(getAllMoviesFn, { proxy: true }),
+    );
 
-        //Rest API
-        const api = new apig.RestApi(this, "RestAPI", {
-          description: "demo api",
-          deployOptions: {
-            stageName: "dev",
-          },
-          defaultCorsPreflightOptions: {
-            allowHeaders: ["Content-Type", "X-Amz-Date"],
-            allowMethods: ["OPTIONS", "GET", "POST", "PUT", "PATCH", "DELETE"],
-            allowCredentials: true,
-            allowOrigins: ["*"],
-          },
-        });
+    moviesEndpoint.addMethod(
+      "POST",
+      new apig.LambdaIntegration(newMovieFn, { proxy: true }),
+    );
 
-        const moviesEndpoint = api.root.addResource("movies");
-        moviesEndpoint.addMethod(
-          "GET",
-          new apig.LambdaIntegration(getAllMoviesFn, { proxy: true })
-        );
+    const movieEndpoint = moviesEndpoint.addResource("{movieId}");
+    movieEndpoint.addMethod(
+      "GET",
+      new apig.LambdaIntegration(getMovieByIdFn, { proxy: true }),
+    );
+    movieEndpoint.addMethod(
+      "DELETE",
+      new apig.LambdaIntegration(deleteMovieByIdFn, { proxy: true }),
+    );
 
-        moviesEndpoint.addMethod(
-          "POST",
-          new apig.LambdaIntegration(newMovieFn, { proxy: true })
-        );
+    const movieCastEndpoint = moviesEndpoint.addResource("cast");
+    movieCastEndpoint.addMethod(
+      "GET",
+      new apig.LambdaIntegration(getMovieCastMembersFn, { proxy: true }),
+    );
 
-        const movieEndpoint = moviesEndpoint.addResource("{movieId}");
-        movieEndpoint.addMethod(
-          "GET",
-          new apig.LambdaIntegration(getMovieByIdFn, { proxy: true })
-        );
-        movieEndpoint.addMethod(
-          "DELETE",
-          new apig.LambdaIntegration(deleteMovieByIdFn, { proxy: true })
-        );
+    const movieActorsEndpoint = movieEndpoint.addResource("actors");
+    movieActorsEndpoint.addMethod(
+      "GET",
+      new apig.LambdaIntegration(getActorByMovieFn, { proxy: true }),
+    );
 
+    const specificActorEndpoint = movieActorsEndpoint.addResource("{actorId}");
+    specificActorEndpoint.addMethod(
+      "GET",
+      new apig.LambdaIntegration(getCastMemberByIdFn, { proxy: true }),
+    );
 
-        const movieCastEndpoint = moviesEndpoint.addResource("cast");
-        movieCastEndpoint.addMethod(
-          "GET",
-          new apig.LambdaIntegration(getMovieCastMembersFn, { proxy: true })
-        );
-
-        const movieActorsEndpoint = movieEndpoint.addResource("actors");
-        movieActorsEndpoint.addMethod(
-          "GET",
-          new apig.LambdaIntegration(getActorByMovieFn, { proxy: true })
-        );
-
-        const specificActorEndpoint = movieActorsEndpoint.addResource("{actorId}");
-        specificActorEndpoint.addMethod(
-          "GET",
-          new apig.LambdaIntegration(getCastMemberByIdFn, { proxy: true })
-        );
-
-        const awardsEndpoint = api.root.addResource("awards");
-        awardsEndpoint.addMethod(
-          "GET",
-          new apig.LambdaIntegration(getAwardsFn, { proxy: true })
-        );
-
-
-      }
+    const awardsEndpoint = api.root.addResource("awards");
+    awardsEndpoint.addMethod(
+      "GET",
+      new apig.LambdaIntegration(getAwardsFn, { proxy: true }),
+    );
+  }
 }
-        

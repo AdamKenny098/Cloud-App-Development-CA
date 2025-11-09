@@ -8,9 +8,8 @@ export const handler: Handler = async (event, context) => {
   try {
     // Print Event
     console.log("Event: ", JSON.stringify(event?.queryStringParameters));
-    
-    const movieId = event.pathParameters?.movieId;
 
+    const movieId = event.pathParameters?.movieId;
 
     if (!movieId) {
       return {
@@ -26,7 +25,7 @@ export const handler: Handler = async (event, context) => {
       new DeleteCommand({
         TableName: process.env.TABLE_NAME,
         Key: { PK: `m${movieId}`, SK: "xxxx" },
-      })
+      }),
     );
     console.log("DeleteCommand response: ", commandOutput);
 
@@ -36,7 +35,6 @@ export const handler: Handler = async (event, context) => {
       headers: {
         "content-type": "application/json",
       },
-      
     };
   } catch (error: any) {
     console.log(JSON.stringify(error));

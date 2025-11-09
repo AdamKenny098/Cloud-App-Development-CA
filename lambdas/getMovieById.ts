@@ -13,7 +13,7 @@ export const handler: Handler = async (event, context) => {
     if (!movieId) {
       return {
         statusCode: 404,
-        headers: {"content-type": "application/json",},
+        headers: { "content-type": "application/json" },
         body: JSON.stringify({ Message: "Missing movie Id" }),
       };
     }
@@ -21,8 +21,8 @@ export const handler: Handler = async (event, context) => {
     const commandOutput = await ddbDocClient.send(
       new GetCommand({
         TableName: process.env.TABLE_NAME,
-        Key: { PK: `m${movieId}`, SK: "xxxx"},
-      })
+        Key: { PK: `m${movieId}`, SK: "xxxx" },
+      }),
     );
     console.log("GetCommand response: ", commandOutput);
     if (!commandOutput.Item) {
