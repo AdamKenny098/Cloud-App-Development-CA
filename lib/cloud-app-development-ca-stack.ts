@@ -60,6 +60,9 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
       "confirm-signup.ts"
     );
 
+    this.addAuthRoute('signout', 'GET', 'SignoutFn', 'signout.ts');
+    this.addAuthRoute('signin', 'POST', 'SigninFn', 'signin.ts')
+
     const entityTable = new dynamodb.Table(this, "EntityTable", {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       partitionKey: { name: "PK", type: dynamodb.AttributeType.STRING },
