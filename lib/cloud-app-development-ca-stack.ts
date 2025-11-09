@@ -46,6 +46,13 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
 
     this.auth = authApi.root.addResource("auth");
 
+    this.addAuthRoute(
+      "signup",
+      "POST",
+      "SignupFn",
+      'signup.ts'
+    );
+
     const entityTable = new dynamodb.Table(this, "EntityTable", {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       partitionKey: { name: "PK", type: dynamodb.AttributeType.STRING },
@@ -92,7 +99,7 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
       "GetMovieByIdFn",
       {
         architecture: lambda.Architecture.ARM_64,
-        runtime: lambda.Runtime.NODEJS_18_X,
+        runtime: lambda.Runtime.NODEJS_16_X,
         entry: `${__dirname}/../lambdas/getMovieById.ts`,
         timeout: cdk.Duration.seconds(10),
         memorySize: 128,
@@ -108,7 +115,7 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
       "GetAllMoviesFn",
       {
         architecture: lambda.Architecture.ARM_64,
-        runtime: lambda.Runtime.NODEJS_18_X,
+        runtime: lambda.Runtime.NODEJS_16_X,
         entry: `${__dirname}/../lambdas/getAllMovies.ts`,
         timeout: cdk.Duration.seconds(10),
         memorySize: 128,
@@ -124,7 +131,7 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
       "DeleteMovieByIdFn",
       {
         architecture: lambda.Architecture.ARM_64,
-        runtime: lambda.Runtime.NODEJS_18_X,
+        runtime: lambda.Runtime.NODEJS_16_X,
         entry: `${__dirname}/../lambdas/deleteMovieById.ts`,
         timeout: cdk.Duration.seconds(10),
         memorySize: 128,
@@ -156,7 +163,7 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
       "GetActorByMovieFn",
       {
         architecture: lambda.Architecture.ARM_64,
-        runtime: lambda.Runtime.NODEJS_18_X,
+        runtime: lambda.Runtime.NODEJS_16_X,
         entry: `${__dirname}/../lambdas/getActorByMovie.ts`,
         timeout: cdk.Duration.seconds(10),
         memorySize: 128,
@@ -172,7 +179,7 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
       "GetCastMemberByIdFn",
       {
         architecture: lambda.Architecture.ARM_64,
-        runtime: lambda.Runtime.NODEJS_18_X,
+        runtime: lambda.Runtime.NODEJS_16_X,
         entry: `${__dirname}/../lambdas/getActorById.ts`,
         timeout: cdk.Duration.seconds(10),
         memorySize: 128,
@@ -185,7 +192,7 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
 
     const getAwardsFn = new lambdanode.NodejsFunction(this, "GetAwardsFn", {
       architecture: lambda.Architecture.ARM_64,
-      runtime: lambda.Runtime.NODEJS_18_X,
+      runtime: lambda.Runtime.NODEJS_16_X,
       entry: `${__dirname}/../lambdas/getAwards.ts`,
       timeout: cdk.Duration.seconds(10),
       memorySize: 128,
@@ -276,7 +283,7 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
       architecture: lambda.Architecture.ARM_64,
       timeout: cdk.Duration.seconds(10),
       memorySize: 128,
-      runtime: lambda.Runtime.NODEJS_18_X,
+      runtime: lambda.Runtime.NODEJS_16_X,
       handler: "handler",
       environment: {
         USER_POOL_ID: this.userPoolId,
@@ -289,7 +296,7 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
     
     const fn = new node.NodejsFunction(this, fnName, {
       ...commonFnProps,
-      entry: `${__dirname}/../lambda/auth/${fnEntry}`,
+      entry: `${__dirname}/../lambdas/auth/${fnEntry}`,
     });
 
     resource.addMethod(method, new apig.LambdaIntegration(fn));
