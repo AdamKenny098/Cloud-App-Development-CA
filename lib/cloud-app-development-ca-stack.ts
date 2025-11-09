@@ -151,6 +151,20 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
           }
         );
 
+        // GET /awards
+        const getAwardsFn = new lambdanode.NodejsFunction(this, "GetAwardsFn", {
+          architecture: lambda.Architecture.ARM_64,
+          runtime: lambda.Runtime.NODEJS_18_X,
+          entry: `${__dirname}/../lambdas/getAwards.ts`,
+          timeout: cdk.Duration.seconds(10),
+          memorySize: 128,
+          environment: {
+            TABLE_NAME: entityTable.tableName,
+            REGION: cdk.Aws.REGION,
+          },
+        });
+
+
         
         // Permissions 
         entityTable.grantReadData(getMovieByIdFn)
@@ -160,6 +174,8 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
         entityTable.grantReadData(getMovieCastMembersFn);
         entityTable.grantReadData(getActorByMovieFn)
         entityTable.grantReadData(getCastMemberByIdFn);
+        entityTable.grantReadData(getAwardsFn);
+
 
         //Rest API
         const api = new apig.RestApi(this, "RestAPI", {
@@ -214,6 +230,13 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
           "GET",
           new apig.LambdaIntegration(getCastMemberByIdFn, { proxy: true })
         );
+
+        const awardsEndpoint = api.root.addResource("awards");
+        awardsEndpoint.addMethod(
+          "GET",
+          new apig.LambdaIntegration(getAwardsFn, { proxy: true })
+        );
+
 
       }
 }
