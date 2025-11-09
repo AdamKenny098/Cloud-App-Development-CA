@@ -12,12 +12,13 @@ import { Aws } from "aws-cdk-lib";
 import { UserPool } from "aws-cdk-lib/aws-cognito";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as node from "aws-cdk-lib/aws-lambda-nodejs";
-
+import { AuthApi } from './constructs/auth-api'
+import {AppApi } from './constructs/app-api'
 export class CloudAppDevelopmentCaStack extends cdk.Stack {
 
-  private auth: apig.IResource;
   private userPoolId: string;
   private userPoolClientId: string;
+  
 
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
@@ -35,33 +36,16 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
     });
 
     this.userPoolClientId = appClient.userPoolClientId;
-
-    const authApi = new apig.RestApi(this, "AuthServiceApi", {
-      description: "Authentication Service RestApi",
-      endpointTypes: [apig.EndpointType.REGIONAL],
-      defaultCorsPreflightOptions: {
-        allowOrigins: apig.Cors.ALL_ORIGINS,
-      },
+    
+    new AuthApi(this, 'AuthServiceApi', {
+      userPoolId: this.userPoolId,
+      userPoolClientId: this.userPoolClientId,
     });
 
-    this.auth = authApi.root.addResource("auth");
-
-    this.addAuthRoute(
-      "signup",
-      "POST",
-      "SignupFn",
-      'signup.ts'
-    );
-
-    this.addAuthRoute(
-      "confirm_signup",
-      "POST",
-      "ConfirmFn",
-      "confirm-signup.ts"
-    );
-
-    this.addAuthRoute('signout', 'GET', 'SignoutFn', 'signout.ts');
-    this.addAuthRoute('signin', 'POST', 'SigninFn', 'signin.ts')
+    new AppApi(this, 'AppApi', {
+      userPoolId: this.userPoolId,
+      userPoolClientId: this.userPoolClientId,
+    } );
 
     const entityTable = new dynamodb.Table(this, "EntityTable", {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
@@ -280,92 +264,5 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
       "GET",
       new apig.LambdaIntegration(getAwardsFn, { proxy: true }),
     );
-
-    const appApi = new apig.RestApi(this, "AppApi", {
-      description: "App RestApi",
-      endpointTypes: [apig.EndpointType.REGIONAL],
-      defaultCorsPreflightOptions: {
-        allowOrigins: apig.Cors.ALL_ORIGINS,
-      },
-    });
-
-    const appCommonFnProps = {
-      architecture: lambda.Architecture.ARM_64,
-      timeout: cdk.Duration.seconds(10),
-      memorySize: 128,
-      runtime: lambda.Runtime.NODEJS_18_X,
-      handler: "handler",
-      environment: {
-        USER_POOL_ID: this.userPoolId,
-        CLIENT_ID: this.userPoolClientId,
-        REGION: cdk.Aws.REGION,
-      },
-    };
-
-    const protectedRes = appApi.root.addResource("protected");
-
-    const publicRes = appApi.root.addResource("public");
-
-    const protectedFn = new node.NodejsFunction(this, "ProtectedFn", {
-      ...appCommonFnProps,
-      entry: `${__dirname}/../lambdas/protected.ts`,
-    });
-
-    const publicFn = new node.NodejsFunction(this, "PublicFn", {
-      ...appCommonFnProps,
-      entry: "./lambdas/public.ts",
-    });
-
-    const authorizerFn = new node.NodejsFunction(this, "AuthorizerFn", {
-      ...appCommonFnProps,
-      entry: `${__dirname}/../lambdas/auth/authorizer.ts`,
-    });
-
-    const requestAuthorizer = new apig.RequestAuthorizer(
-      this,
-      "RequestAuthorizer",
-      {
-        identitySources: [apig.IdentitySource.header("cookie")],
-        handler: authorizerFn,
-        resultsCacheTtl: cdk.Duration.minutes(0),
-      }
-    );
-
-    protectedRes.addMethod("GET", new apig.LambdaIntegration(protectedFn), {
-      authorizer: requestAuthorizer,
-      authorizationType: apig.AuthorizationType.CUSTOM,
-    });
-
-    publicRes.addMethod("GET", new apig.LambdaIntegration(publicFn));
-  }
-
-  private addAuthRoute(
-    resourceName: string,
-    method: string,
-    fnName: string,
-    fnEntry: string,
-    allowCognitoAccess?: boolean
-  ): void {
-    const commonFnProps = {
-      architecture: lambda.Architecture.ARM_64,
-      timeout: cdk.Duration.seconds(10),
-      memorySize: 128,
-      runtime: lambda.Runtime.NODEJS_16_X,
-      handler: "handler",
-      environment: {
-        USER_POOL_ID: this.userPoolId,
-        CLIENT_ID: this.userPoolClientId,
-        REGION: cdk.Aws.REGION
-      },
-    };
-    
-    const resource = this.auth.addResource(resourceName);
-    
-    const fn = new node.NodejsFunction(this, fnName, {
-      ...commonFnProps,
-      entry: `${__dirname}/../lambdas/auth/${fnEntry}`,
-    });
-
-    resource.addMethod(method, new apig.LambdaIntegration(fn));
   }
 }
