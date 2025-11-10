@@ -19,9 +19,12 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
   private userPoolId: string;
   private userPoolClientId: string;
   
+  
 
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
+    
 
     const userPool = new UserPool(this, "UserPool", {
       signInAliases: { username: true, email: true },
@@ -36,6 +39,26 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
     });
 
     this.userPoolClientId = appClient.userPoolClientId;
+
+    const authorizerFn = new node.NodejsFunction(this, "AppApiAuthorizerFn", {
+      architecture: lambda.Architecture.ARM_64,
+      runtime: lambda.Runtime.NODEJS_18_X,
+      entry: `${__dirname}/../lambdas/auth/authorizer.ts`,
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 128,
+      environment: {
+        USER_POOL_ID: this.userPoolId,
+        CLIENT_ID: this.userPoolClientId,
+        REGION: cdk.Aws.REGION,
+      },
+    });
+
+    const requestAuthorizer = new apig.RequestAuthorizer(this, "AppApiRequestAuthorizer", {
+      handler: authorizerFn,
+      identitySources: [apig.IdentitySource.header("cookie")],
+      resultsCacheTtl: cdk.Duration.seconds(0),
+    });
+
     
     new AuthApi(this, 'AuthServiceApi', {
       userPoolId: this.userPoolId,
@@ -235,6 +258,10 @@ export class CloudAppDevelopmentCaStack extends cdk.Stack {
     movieEndpoint.addMethod(
       "GET",
       new apig.LambdaIntegration(getMovieByIdFn, { proxy: true }),
+      {
+        authorizer: requestAuthorizer,
+        authorizationType: apig.AuthorizationType.CUSTOM,
+      },
     );
     movieEndpoint.addMethod(
       "DELETE",

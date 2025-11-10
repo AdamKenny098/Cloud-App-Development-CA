@@ -50,7 +50,7 @@ export class AppApi extends Construct {
 
     const protectedFn = new node.NodejsFunction(this, "ProtectedFn", {
       ...appCommonFnProps,
-      entry: `${__dirname}/../lambdas/protected.ts`,
+      entry: `${__dirname}/../../lambdas/protected.ts`,
     });
 
     const publicFn = new node.NodejsFunction(this, "PublicFn", {
@@ -60,7 +60,7 @@ export class AppApi extends Construct {
 
     const authorizerFn = new node.NodejsFunction(this, "AuthorizerFn", {
       ...appCommonFnProps,
-      entry: `${__dirname}/../lambdas/auth/authorizer.ts`,
+      entry: `${__dirname}/../../lambdas/auth/authorizer.ts`,
     });
 
     const requestAuthorizer = new apig.RequestAuthorizer(

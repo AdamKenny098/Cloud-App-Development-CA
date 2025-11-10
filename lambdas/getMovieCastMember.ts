@@ -25,18 +25,6 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
         body: JSON.stringify({ message: "Missing query parameters" }),
       };
     }
-    if (!isValidQueryParams(queryParams)) {
-      return {
-        statusCode: 500,
-        headers: {
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          message: `Incorrect type. Must match Query parameters schema`,
-          schema: schema.definitions["Cast"],
-        }),
-      };
-    }
 
     const movieId = queryParams.movieId;
     let commandInput: QueryCommandInput = {

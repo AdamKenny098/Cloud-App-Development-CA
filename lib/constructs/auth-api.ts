@@ -72,7 +72,7 @@ private addAuthRoute(
     
     const fn = new node.NodejsFunction(this, fnName, {
       ...commonFnProps,
-      entry: `${__dirname}/../lambdas/auth/${fnEntry}`,
+      entry: `${__dirname}/../../lambdas/auth/${fnEntry}`,
     });
 
     resource.addMethod(method, new apig.LambdaIntegration(fn));
